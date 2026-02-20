@@ -1,0 +1,74 @@
+{
+  "agent_name": "Content Marketing Manager",
+  "agent_id": "69986f8892ed7d63ef102c31",
+  "description": "Coordinates content writing and SEO optimization workflow; routes the brief to sub-agents and aggregates the final SEO-optimized content output",
+  "agent_type": "json",
+  "accessor": "result",
+  "auto_generated": true,
+  "response_schema": {
+    "content_title": "string",
+    "content_body": "string",
+    "content_type": "string",
+    "target_audience": "string",
+    "key_takeaways": [
+      "string"
+    ],
+    "call_to_action": "string",
+    "hashtags": [
+      "string"
+    ],
+    "seo_score": "number",
+    "title_tag": "string",
+    "meta_description": "string",
+    "primary_keywords": [
+      "string"
+    ],
+    "secondary_keywords": [
+      "string"
+    ],
+    "keyword_density_analysis": "string",
+    "content_improvements": [
+      "string"
+    ],
+    "internal_linking_suggestions": [
+      "string"
+    ],
+    "heading_suggestions": [
+      "string"
+    ],
+    "overall_assessment": "string"
+  },
+  "example_response": {
+    "content_title": "sample string",
+    "content_body": "sample string",
+    "content_type": "sample string",
+    "target_audience": "sample string",
+    "key_takeaways": [
+      "sample string"
+    ],
+    "call_to_action": "sample string",
+    "hashtags": [
+      "sample string"
+    ],
+    "seo_score": 0,
+    "title_tag": "sample string",
+    "meta_description": "sample string",
+    "primary_keywords": [
+      "sample string"
+    ],
+    "secondary_keywords": [
+      "sample string"
+    ],
+    "keyword_density_analysis": "sample string",
+    "content_improvements": [
+      "sample string"
+    ],
+    "internal_linking_suggestions": [
+      "sample string"
+    ],
+    "heading_suggestions": [
+      "sample string"
+    ],
+    "overall_assessment": "sample string"
+  }
+}

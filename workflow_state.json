@@ -1,0 +1,29 @@
+{
+  "agents": {
+    "content_marketing_manager": {
+      "agent_id": "69986f8892ed7d63ef102c31",
+      "type": "manager",
+      "managed_agents": ["69986f7492ed7d63ef102c2d", "69986f75afc03b530a0275c1"]
+    },
+    "content_writer_agent": {
+      "agent_id": "69986f7492ed7d63ef102c2d",
+      "type": "sub-agent",
+      "has_knowledge_base": true
+    },
+    "seo_analyst_agent": {
+      "agent_id": "69986f75afc03b530a0275c1",
+      "type": "sub-agent"
+    },
+    "graphic_designer_agent": {
+      "agent_id": "69986f98ce3cbf4cb93869ed",
+      "type": "independent",
+      "has_image_output": true
+    }
+  },
+  "knowledge_base": {
+    "rag_id": "69986f553dc9e9e52825ad44",
+    "rag_name": "aigrowthcommunitywebsitekb9h5p",
+    "name": "AI Growth Community Website KB",
+    "used_by": "content_writer_agent"
+  }
+}

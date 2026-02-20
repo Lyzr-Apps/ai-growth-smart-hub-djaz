@@ -1,0 +1,16 @@
+{
+  "agent_name": "Graphic Designer Agent",
+  "agent_id": "69986f98ce3cbf4cb93869ed",
+  "agent_type": "json",
+  "accessor": "json",
+  "has_module_outputs": true,
+  "response_schema": {
+    "graphic_title": "string",
+    "graphic_description": "string",
+    "design_notes": "string",
+    "graphic_type": "string",
+    "dimensions": "string",
+    "color_palette_used": ["string"],
+    "brand_alignment_notes": "string"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "agent_name": "Graphic Designer Agent",
+  "agent_id": "69986f98ce3cbf4cb93869ed",
+  "description": "Generates marketing graphics including social media banners, blog thumbnails, and promotional visuals based on content context and brand guidelines",
+  "agent_type": "json",
+  "accessor": "result",
+  "auto_generated": true,
+  "response_schema": {
+    "graphic_title": "string",
+    "graphic_description": "string",
+    "design_notes": "string",
+    "graphic_type": "string",
+    "dimensions": "string",
+    "color_palette_used": [
+      "string"
+    ],
+    "brand_alignment_notes": "string"
+  },
+  "example_response": {
+    "graphic_title": "sample string",
+    "graphic_description": "sample string",
+    "design_notes": "sample string",
+    "graphic_type": "sample string",
+    "dimensions": "sample string",
+    "color_palette_used": [
+      "sample string"
+    ],
+    "brand_alignment_notes": "sample string"
+  },
+  "has_module_outputs": true,
+  "module_outputs_example": {
+    "artifact_files": [
+      {
+        "file_url": "https://example.com/image.png"
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "agent_name": "SEO Analyst Agent",
+  "agent_id": "69986f75afc03b530a0275c1",
+  "agent_type": "json",
+  "accessor": "json",
+  "has_module_outputs": false,
+  "response_schema": {
+    "seo_score": "number",
+    "title_tag": "string",
+    "meta_description": "string",
+    "primary_keywords": ["string"],
+    "secondary_keywords": ["string"],
+    "keyword_density_analysis": "string",
+    "content_improvements": ["string"],
+    "internal_linking_suggestions": ["string"],
+    "heading_suggestions": ["string"],
+    "overall_assessment": "string"
+  }
+}
