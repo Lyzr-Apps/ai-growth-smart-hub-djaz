@@ -508,6 +508,20 @@ export default function Page() {
         const data = result?.response?.result || {}
         const artifactFiles = extractArtifactFiles(result)
 
+        // Log for debugging image extraction
+        if (typeof window !== 'undefined') {
+          console.log('[Graphic Designer] Full result keys:', Object.keys(result || {}))
+          console.log('[Graphic Designer] module_outputs:', JSON.stringify(result?.module_outputs, null, 2))
+          console.log('[Graphic Designer] artifact_files found:', artifactFiles.length)
+          if (result?.raw_response) {
+            try {
+              const raw = typeof result.raw_response === 'string' ? JSON.parse(result.raw_response) : result.raw_response
+              console.log('[Graphic Designer] raw_response keys:', Object.keys(raw || {}))
+              if (raw?.module_outputs) console.log('[Graphic Designer] raw module_outputs:', JSON.stringify(raw.module_outputs, null, 2))
+            } catch { /* ignore */ }
+          }
+        }
+
         const newGraphic: GraphicResult = {
           graphic_title: data?.graphic_title || graphicForm.headline || 'Untitled Graphic',
           graphic_description: data?.graphic_description || '',
@@ -523,6 +537,11 @@ export default function Page() {
           }))
         }
         setGraphicResults(prev => [newGraphic, ...prev])
+
+        // Show warning if no images were generated
+        if (artifactFiles.length === 0) {
+          setGraphicError('The agent responded but no image was generated. This may happen occasionally -- please try again.')
+        }
 
         // Update most recent campaign with graphic
         if (campaigns.length > 0) {

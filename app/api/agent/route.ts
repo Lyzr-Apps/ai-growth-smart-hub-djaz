@@ -277,6 +277,10 @@ async function pollTask(task_id: string) {
   }
 
   // Task completed — envelope extraction + parseLLMJson + normalizeResponse
+  // Log all top-level keys for debugging image agent responses
+  const taskKeys = Object.keys(task || {})
+  console.log('[Agent Route] Task keys:', taskKeys)
+
   const rawText = JSON.stringify(task.response)
   let moduleOutputs: ModuleOutputs | undefined
   let agentResponseRaw: any = rawText
@@ -285,6 +289,7 @@ async function pollTask(task_id: string) {
   //    (image agents, file agents return module_outputs here)
   if (task.module_outputs && typeof task.module_outputs === 'object') {
     moduleOutputs = task.module_outputs
+    console.log('[Agent Route] Found module_outputs at task level:', JSON.stringify(moduleOutputs).substring(0, 500))
   }
 
   // 2. Then try to unwrap the response envelope
@@ -294,6 +299,7 @@ async function pollTask(task_id: string) {
       // Also check for module_outputs inside the envelope as a fallback
       if (!moduleOutputs && envelope.module_outputs) {
         moduleOutputs = envelope.module_outputs
+        console.log('[Agent Route] Found module_outputs in envelope:', JSON.stringify(moduleOutputs).substring(0, 500))
       }
       agentResponseRaw = envelope.response
     }
@@ -305,7 +311,32 @@ async function pollTask(task_id: string) {
   if (!moduleOutputs && task.response && typeof task.response === 'object') {
     if (task.response.module_outputs && typeof task.response.module_outputs === 'object') {
       moduleOutputs = task.response.module_outputs
+      console.log('[Agent Route] Found module_outputs in task.response:', JSON.stringify(moduleOutputs).substring(0, 500))
     }
+  }
+
+  // 4. Deep scan: recursively look for artifact_files in the entire task object
+  if (!moduleOutputs) {
+    const findArtifacts = (obj: any, depth = 0): ModuleOutputs | undefined => {
+      if (!obj || typeof obj !== 'object' || depth > 5) return undefined
+      if (obj.artifact_files && Array.isArray(obj.artifact_files) && obj.artifact_files.length > 0) {
+        return obj as ModuleOutputs
+      }
+      for (const key of Object.keys(obj)) {
+        const found = findArtifacts(obj[key], depth + 1)
+        if (found) return found
+      }
+      return undefined
+    }
+    const deepFound = findArtifacts(task)
+    if (deepFound) {
+      moduleOutputs = deepFound
+      console.log('[Agent Route] Found module_outputs via deep scan:', JSON.stringify(moduleOutputs).substring(0, 500))
+    }
+  }
+
+  if (!moduleOutputs) {
+    console.log('[Agent Route] No module_outputs found anywhere. Full task structure (first 2000 chars):', JSON.stringify(task).substring(0, 2000))
   }
 
   const parsed = parseLLMJson(agentResponseRaw)
