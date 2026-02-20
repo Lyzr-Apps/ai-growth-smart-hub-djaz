@@ -38,6 +38,41 @@ const FILE_TYPE_MAP: Record<string, "pdf" | "docx" | "txt"> = {
   "text/plain": "txt",
 };
 
+// GET - Redirect to POST for document listing (safety net for GET requests)
+export async function GET(request: NextRequest) {
+  const ragId = request.nextUrl.searchParams.get('ragId')
+  if (ragId) {
+    // Proxy to the list documents flow
+    try {
+      const response = await fetch(
+        `${LYZR_RAG_BASE_URL}/rag/documents/${encodeURIComponent(ragId)}/`,
+        {
+          method: 'GET',
+          headers: {
+            accept: 'application/json',
+            'x-api-key': LYZR_API_KEY,
+          },
+        }
+      )
+      if (response.ok) {
+        const data = await response.json()
+        const filePaths = Array.isArray(data) ? data : data.documents || data.data || []
+        const documents = filePaths.map((filePath: string) => {
+          const fileName = filePath.split('/').pop() || filePath
+          const ext = fileName.split('.').pop()?.toLowerCase() || ''
+          const fileType = ext === 'pdf' ? 'pdf' : ext === 'docx' ? 'docx' : ext === 'txt' ? 'txt' : 'unknown'
+          return { fileName, fileType, status: 'active' }
+        })
+        return NextResponse.json({ success: true, documents, ragId, timestamp: new Date().toISOString() })
+      }
+      return NextResponse.json({ success: false, error: `Failed: ${response.status}` }, { status: response.status })
+    } catch (error) {
+      return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'Server error' }, { status: 500 })
+    }
+  }
+  return NextResponse.json({ success: true, documents: [], message: 'No ragId provided. Use POST with ragId in body.' })
+}
+
 // POST - List documents (JSON body) or Upload and train (formData)
 export async function POST(request: NextRequest) {
   try {

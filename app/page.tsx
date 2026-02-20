@@ -454,13 +454,51 @@ export default function Page() {
     setIsGeneratingContent(false)
   }, [contentForm, campaigns, saveCampaigns])
 
+  // Helper: extract artifact files from any response shape
+  const extractArtifactFiles = useCallback((result: any): { file_url: string; name: string; format_type: string }[] => {
+    const tryExtract = (obj: any): any[] | null => {
+      if (!obj) return null
+      if (Array.isArray(obj?.artifact_files) && obj.artifact_files.length > 0) {
+        return obj.artifact_files.filter((f: any) => f?.file_url)
+      }
+      return null
+    }
+    // Priority 1: top-level module_outputs
+    const p1 = tryExtract(result?.module_outputs)
+    if (p1 && p1.length > 0) return p1
+    // Priority 2: response.module_outputs
+    const p2 = tryExtract(result?.response?.module_outputs)
+    if (p2 && p2.length > 0) return p2
+    // Priority 3: response.result.module_outputs
+    const p3 = tryExtract(result?.response?.result?.module_outputs)
+    if (p3 && p3.length > 0) return p3
+    // Priority 4: direct image_url / file_url in result data
+    const data = result?.response?.result || {}
+    if (data?.image_url) return [{ file_url: data.image_url, name: 'generated-image', format_type: 'png' }]
+    if (data?.file_url) return [{ file_url: data.file_url, name: 'generated-file', format_type: 'png' }]
+    // Priority 5: parse raw_response
+    if (result?.raw_response) {
+      try {
+        const raw = typeof result.raw_response === 'string' ? JSON.parse(result.raw_response) : result.raw_response
+        const p5 = tryExtract(raw?.module_outputs)
+        if (p5 && p5.length > 0) return p5
+        // Also check nested: raw.response.module_outputs
+        const p5b = tryExtract(raw?.response?.module_outputs)
+        if (p5b && p5b.length > 0) return p5b
+      } catch {
+        // ignore
+      }
+    }
+    return []
+  }, [])
+
   // Handle graphic generation
   const handleGenerateGraphic = useCallback(async () => {
     setIsGeneratingGraphic(true)
     setGraphicError(null)
     setActiveAgentId(GRAPHIC_DESIGNER_ID)
 
-    const prompt = `Create a ${graphicForm.graphicType || 'Social Banner'} graphic with headline "${graphicForm.headline}". Aspect ratio: ${graphicForm.aspectRatio || '16:9 Landscape'}. ${graphicForm.styleNotes ? `Style notes: ${graphicForm.styleNotes}` : ''} Use warm heritage premium brand colors.`
+    const prompt = `Create a ${graphicForm.graphicType || 'Social Banner'} graphic with headline "${graphicForm.headline}". Aspect ratio: ${graphicForm.aspectRatio || '16:9 Landscape'}. ${graphicForm.styleNotes ? `Style notes: ${graphicForm.styleNotes}` : ''} Use warm heritage premium brand colors. The graphic should be visually appealing and professional for AI Growth Community marketing.`
 
     try {
       const result = await callAIAgent(prompt, GRAPHIC_DESIGNER_ID)
@@ -468,7 +506,7 @@ export default function Page() {
 
       if (result.success) {
         const data = result?.response?.result || {}
-        const artifactFiles = Array.isArray(result?.module_outputs?.artifact_files) ? result.module_outputs!.artifact_files : []
+        const artifactFiles = extractArtifactFiles(result)
 
         const newGraphic: GraphicResult = {
           graphic_title: data?.graphic_title || graphicForm.headline || 'Untitled Graphic',
@@ -480,8 +518,8 @@ export default function Page() {
           brand_alignment_notes: data?.brand_alignment_notes || '',
           images: artifactFiles.map((f: { file_url?: string; name?: string; format_type?: string }) => ({
             file_url: f?.file_url || '',
-            name: f?.name || '',
-            format_type: f?.format_type || ''
+            name: f?.name || 'graphic',
+            format_type: f?.format_type || 'png'
           }))
         }
         setGraphicResults(prev => [newGraphic, ...prev])
@@ -493,33 +531,47 @@ export default function Page() {
           saveCampaigns(updatedCampaigns)
         }
       } else {
-        setGraphicError(result?.error || 'Failed to generate graphic. Please try again.')
+        setGraphicError(result?.error || result?.response?.message || 'Failed to generate graphic. Please try again.')
       }
-    } catch {
-      setGraphicError('An unexpected error occurred. Please try again.')
+    } catch (err) {
+      setGraphicError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.')
       setActiveAgentId(null)
     }
 
     setIsGeneratingGraphic(false)
-  }, [graphicForm, campaigns, saveCampaigns])
+  }, [graphicForm, campaigns, saveCampaigns, extractArtifactFiles])
 
-  // Handle KB upload
+  // Handle KB upload - with robust error handling for fetchWrapper returning undefined
   const handleKbUpload = useCallback(async () => {
     const file = kbFileRef.current?.files?.[0]
-    if (!file) return
+    if (!file) {
+      setKbUploadStatus('Please select a file first.')
+      return
+    }
+
+    // Validate file type before sending
+    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain']
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    const extToMime: Record<string, string> = { pdf: 'application/pdf', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', txt: 'text/plain' }
+
+    if (!allowedTypes.includes(file.type) && !(ext && extToMime[ext])) {
+      setKbUploadStatus('Unsupported file type. Please upload PDF, DOCX, or TXT files only.')
+      return
+    }
+
     setKbLoading(true)
-    setKbUploadStatus(null)
+    setKbUploadStatus('Uploading document...')
     try {
       const result = await uploadAndTrainDocument(RAG_ID, file)
-      if (result.success) {
+      if (result && result.success) {
         setKbUploadStatus('Document uploaded and training started successfully.')
         await fetchKbDocuments()
         if (kbFileRef.current) kbFileRef.current.value = ''
       } else {
-        setKbUploadStatus(`Upload failed: ${result.error || 'Unknown error'}`)
+        setKbUploadStatus(`Upload failed: ${result?.error || 'The server returned an error. Please try again.'}`)
       }
-    } catch {
-      setKbUploadStatus('Upload failed. Please try again.')
+    } catch (err) {
+      setKbUploadStatus(`Upload failed: ${err instanceof Error ? err.message : 'Network error. Please check your connection and try again.'}`)
     }
     setKbLoading(false)
   }, [fetchKbDocuments])

@@ -83,6 +83,13 @@ export async function getDocuments(ragId: string): Promise<GetDocumentsResponse>
       body: JSON.stringify({ ragId }),
     })
 
+    if (!response) {
+      return {
+        success: false,
+        error: 'No response from server. The server may be unavailable.',
+      }
+    }
+
     const data = await response.json()
     return data
   } catch (error) {
@@ -97,23 +104,46 @@ export async function getDocuments(ragId: string): Promise<GetDocumentsResponse>
  * Upload and train a document to the knowledge base
  */
 export async function uploadAndTrainDocument(ragId: string, file: File): Promise<UploadResponse> {
-  // Validate file type
-  if (!SUPPORTED_FILE_TYPES.includes(file.type as SupportedFileType)) {
+  // Validate file type - also check by extension as fallback
+  const ext = file.name.split('.').pop()?.toLowerCase() || ''
+  const extToMime: Record<string, SupportedFileType> = {
+    pdf: 'application/pdf',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    txt: 'text/plain',
+  }
+
+  const isTypeSupported = SUPPORTED_FILE_TYPES.includes(file.type as SupportedFileType)
+  const isExtSupported = ext in extToMime
+
+  if (!isTypeSupported && !isExtSupported) {
     return {
       success: false,
-      error: `Unsupported file type: ${file.type}. Supported: PDF, DOCX, TXT`,
+      error: `Unsupported file type: ${file.type || ext}. Supported: PDF, DOCX, TXT`,
     }
   }
 
   try {
+    // If file.type is empty/incorrect but extension is valid, create a new File with correct MIME type
+    let uploadFile = file
+    if (!isTypeSupported && isExtSupported) {
+      uploadFile = new File([file], file.name, { type: extToMime[ext] })
+    }
+
     const formData = new FormData()
     formData.append('ragId', ragId)
-    formData.append('file', file, file.name)
+    formData.append('file', uploadFile, uploadFile.name)
 
     const response = await fetchWrapper('/api/rag', {
       method: 'POST',
       body: formData,
     })
+
+    if (!response) {
+      return {
+        success: false,
+        error: 'No response from server. The server may be unavailable. Please try again.',
+      }
+    }
 
     const data = await response.json()
     return data
@@ -141,6 +171,13 @@ export async function deleteDocuments(
       body: JSON.stringify({ ragId, documentNames }),
     })
 
+    if (!response) {
+      return {
+        success: false,
+        error: 'No response from server. Please try again.',
+      }
+    }
+
     const data = await response.json()
     return data
   } catch (error) {
@@ -163,6 +200,13 @@ export async function crawlWebsite(ragId: string, url: string): Promise<CrawlRes
       },
       body: JSON.stringify({ ragId, url }),
     })
+
+    if (!response) {
+      return {
+        success: false,
+        error: 'No response from server. Please try again.',
+      }
+    }
 
     const data = await response.json()
     return data
